@@ -1,106 +1,146 @@
 # api/index.py
 from flask import Flask, jsonify, Response
-import json
-import os
+import json, os
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def home():
-    return Response("""
-<!doctype html>
+    # Same styling as you provided. Data loads from /flashcards.
+    return Response("""<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Flashcards</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flashcard App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0f172a;color:#e2e8f0}
-    header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #1f2937;background:#111827}
-    h1{margin:0;font-size:18px}
-    .wrap{max-width:900px;margin:24px auto;padding:0 16px}
-    .controls{display:flex;gap:8px}
-    button{border:0;border-radius:999px;padding:10px 14px;cursor:pointer;background:#1d4ed8;color:#fff}
-    button.secondary{background:#334155}
-    .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:16px;margin-top:12px}
-    .meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#93c5fd;margin-bottom:8px}
-    .cn{background:#0ea5e9;color:#00111a;padding:16px;border-radius:12px;text-align:center;font-size:20px;font-weight:600}
-    .en{background:#0b1220;color:#93c5fd;padding:16px;border-radius:12px;text-align:center;font-size:16px;margin-top:8px}
-    .hint{color:#93c5fd;text-align:center;margin-top:8px}
+    body{font-family:'Inter',sans-serif;background-color:#f3f4f6;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:1rem;}
+    .flashcard-container{width:100%;max-width:640px;background-color:#ffffff;border-radius:1.5rem;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1),0 4px 6px -2px rgba(0,0,0,0.05);padding:2rem;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:500px;}
+    .card-content{flex-grow:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:1rem;width:100%;}
+    .card-content p{font-size:1.5rem;line-height:1.75rem;font-weight:500;color:#374151;margin-bottom:1rem;}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Flashcards · Chinese → English</h1>
-    <nav class="controls">
-      <button id="shuffle">Shuffle</button>
-      <button id="next" class="secondary">Next</button>
-      <button id="reveal" class="secondary">Reveal</button>
-    </nav>
-  </header>
+  <div class="flashcard-container">
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">English-Chinese Flashcards</h1>
+    <hr class="w-full h-1 bg-gray-200 rounded my-4"/>
 
-  <div class="wrap">
-    <div id="card" class="card" tabindex="0" role="group" aria-label="flashcard">
-      <div class="meta"><span id="category">—</span><span id="type">—</span></div>
-      <div id="cn" class="cn">Loading…</div>
-      <div id="hint" class="hint">Click “Reveal” to show English</div>
-      <div id="en" class="en" style="display:none;"></div>
+    <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6 w-full">
+      <div class="flex items-center space-x-2">
+        <input type="radio" id="sentences" name="card_type" value="sentence" class="form-radio text-blue-600 h-4 w-4" checked>
+        <label for="sentences" class="text-lg font-medium text-gray-700">Sentences</label>
+      </div>
+      <div class="flex items-center space-x-2">
+        <input type="radio" id="vocabulary" name="card_type" value="vocabulary" class="form-radio text-blue-600 h-4 w-4">
+        <label for="vocabulary" class="text-lg font-medium text-gray-700">Vocabulary</label>
+      </div>
+    </div>
+
+    <div class="text-gray-500 mb-4" id="card-counter"></div>
+
+    <div class="card-content border border-gray-300 rounded-xl p-6 w-full flex flex-col justify-center items-center">
+      <div id="chinese-text" class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-4 text-center"></div>
+      <div id="english-text" class="text-xl sm:text-2xl text-gray-600 transition-opacity duration-300 ease-in-out opacity-0 mt-4 text-center"></div>
+    </div>
+
+    <div class="flex flex-wrap justify-center gap-4 mt-8 w-full">
+      <button id="show-hide-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+        Show/Hide English
+      </button>
+      <button id="next-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+        Next Card
+      </button>
+      <button id="shuffle-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50">
+        Shuffle Cards
+      </button>
     </div>
   </div>
 
   <script>
-    const state = { data: [], i: 0, revealed: false };
-    const $ = id => document.getElementById(id);
+    let allData = [];
+    let filteredData = [];
+    let cardIndex = 0;
+    let showTranslation = false;
 
-    function render(){
-      if(!state.data.length){
-        $('cn').textContent='No data';
-        $('hint').style.display='none';
-        $('en').style.display='none';
+    const chineseText = document.getElementById('chinese-text');
+    const englishText = document.getElementById('english-text');
+    const cardCounter = document.getElementById('card-counter');
+    const showHideBtn = document.getElementById('show-hide-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const shuffleBtn = document.getElementById('shuffle-btn');
+    const cardTypeRadios = document.getElementsByName('card_type');
+
+    function shuffleArray(array){
+      for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+      }
+    }
+
+    function filterAndShuffleCards(){
+      const selectedType = document.querySelector('input[name="card_type"]:checked')?.value || 'sentence';
+      filteredData = (allData || []).filter(card => card.type === selectedType);
+      shuffleArray(filteredData);
+      cardIndex = 0;
+      showTranslation = false;
+    }
+
+    function renderCard(){
+      if(!filteredData.length){
+        chineseText.innerText = "No cards available.";
+        englishText.innerText = "";
+        englishText.classList.add('opacity-0');
+        cardCounter.innerText = "0/0";
         return;
       }
-      const item = state.data[state.i % state.data.length];
-      $('category').textContent = item.category || '—';
-      $('type').textContent = item.type || '—';
-      $('cn').textContent = item.chinese || '—'; // only this line shows Chinese
-      $('en').textContent = item.english || '—';
-      $('hint').style.display = state.revealed ? 'none' : 'block';
-      $('en').style.display   = state.revealed ? 'block' : 'none';
+      const current = filteredData[cardIndex];
+      // Only the Chinese line is Chinese. All other UI remains English.
+      chineseText.innerText = current.chinese || "";
+      englishText.innerText = current.english || "";
+      if(showTranslation){ englishText.classList.remove('opacity-0'); }
+      else{ englishText.classList.add('opacity-0'); }
+      cardCounter.innerText = `${cardIndex+1}/${filteredData.length}`;
     }
 
-    function shuffle(a){
-      for(let i=a.length-1;i>0;i--){
-        const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];
-      }
-      return a;
-    }
+    function handleShowHide(){ showTranslation = !showTranslation; renderCard(); }
+    function handleNextCard(){ cardIndex = (cardIndex+1)%filteredData.length; showTranslation=false; renderCard(); }
+    function handleShuffle(){ filterAndShuffleCards(); renderCard(); }
 
-    $('reveal').onclick = ()=>{ state.revealed = !state.revealed; render(); };
-    $('next').onclick   = ()=>{ state.i = (state.i+1)%state.data.length; state.revealed=false; render(); };
-    $('shuffle').onclick= ()=>{ state.data = shuffle(state.data.slice()); state.i=0; state.revealed=false; render(); };
+    showHideBtn.addEventListener('click', handleShowHide);
+    nextBtn.addEventListener('click', handleNextCard);
+    shuffleBtn.addEventListener('click', handleShuffle);
+    cardTypeRadios.forEach(r => r.addEventListener('change', ()=>{ filterAndShuffleCards(); renderCard(); }));
 
-    window.addEventListener('keydown',e=>{
-      if(e.code==='Space'){ e.preventDefault(); $('reveal').click(); }
-      if(e.code==='ArrowRight'){ e.preventDefault(); $('next').click(); }
-    });
+    // Load from API
+    fetch('/flashcards')
+      .then(r => r.json())
+      .then(d => {
+        allData = Array.isArray(d) ? d : (Array.isArray(d.flashcards) ? d.flashcards : []);
+        filterAndShuffleCards();
+        renderCard();
+      })
+      .catch(() => {
+        chineseText.innerText = "Failed to load data.";
+        englishText.innerText = "";
+        englishText.classList.add('opacity-0');
+        cardCounter.innerText = "0/0";
+      });
 
-    fetch('/flashcards').then(r=>r.json()).then(d=>{
-      state.data = Array.isArray(d) ? d : (d.flashcards || []);
-      render();
-    }).catch(()=>{
-      $('cn').textContent='Load failed';
-      $('hint').style.display='none';
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if(e.code==='Space'){ e.preventDefault(); handleShowHide(); }
+      if(e.code==='ArrowRight'){ e.preventDefault(); handleNextCard(); }
     });
   </script>
 </body>
-</html>
-""", mimetype="text/html; charset=utf-8")
+</html>""", mimetype="text/html; charset=utf-8")
 
-@app.route('/flashcards')
+@app.route("/flashcards")
 def get_flashcards():
-    file_path = os.path.join(os.path.dirname(__file__), '..', 'data.json')
+    path = os.path.join(os.path.dirname(__file__), "..", "data.json")
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return jsonify(data)
     except FileNotFoundError:
@@ -108,5 +148,5 @@ def get_flashcards():
     except json.JSONDecodeError:
         return jsonify({"error": "data.json is not valid JSON"}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
