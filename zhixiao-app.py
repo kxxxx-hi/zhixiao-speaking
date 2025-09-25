@@ -1,99 +1,287 @@
-import streamlit as st
-import json
-import os
-import random
+# This Flask application serves the flashcard web page.
+# It requires the Flask library to be installed.
+# You can install it by running: pip install Flask
 
-# Use st.cache_data to cache the data loading function.
-@st.cache_data
-def load_all_data(file_name):
-    """
-    Loads all flashcard data from a single JSON file.
-    """
-    if not os.path.exists(file_name):
-        st.error(f"File not found: {file_name}. Please make sure 'data.json' exists.")
-        return []
+from flask import Flask, render_template_string
 
-    try:
-        with open(file_name, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            # Check if the loaded data is a list as expected
-            if isinstance(data, list):
-                return data
-            else:
-                st.error("JSON file is not in the expected list format.")
-                return []
-    except json.JSONDecodeError:
-        st.error(f"Error decoding JSON from {file_name}. The file may be empty or malformed.")
-        return []
-    except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
-        return []
-
-st.set_page_config(page_title="Flashcard App", layout="centered")
-
-st.title("English-Chinese Flashcards")
-st.markdown("---")
-
-# Use a radio button to select between vocabulary and sentence flashcards.
-card_type = st.radio(
-    "Select Card Type:",
-    ("Vocabulary", "Sentences")
-)
-
-# Load all data from the single 'data.json' file
-all_data = load_all_data("data.json")
-
-# Filter the data based on the selected card type
-if all_data:
-    # Determine the expected 'type' value to match in the JSON data.
-    # We account for the singular vs. plural inconsistency between the radio button and data.
-    expected_type = card_type.lower()
-    if expected_type == "sentences":
-        expected_type = "sentence"
+# The HTML content of the flashcard application, stored as a multi-line string.
+HTML_CONTENT = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .flashcard-container {
+            width: 100%;
+            max-width: 640px;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 500px;
+        }
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            width: 100%;
+        }
+        .card-content p {
+            font-size: 1.5rem;
+            line-height: 1.75rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="flashcard-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">English-Chinese Flashcards</h1>
+        <hr class="w-full h-1 bg-gray-200 rounded my-4">
         
-    filtered_data = [card for card in all_data if card.get('type') == expected_type]
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6 w-full">
+            <div class="flex items-center space-x-2">
+                <input type="radio" id="sentences" name="card_type" value="sentence" class="form-radio text-blue-600 h-4 w-4" checked>
+                <label for="sentences" class="text-lg font-medium text-gray-700">Sentences</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="radio" id="vocabulary" name="card_type" value="vocabulary" class="form-radio text-blue-600 h-4 w-4">
+                <label for="vocabulary" class="text-lg font-medium text-gray-700">Vocabulary</label>
+            </div>
+        </div>
 
-    if filtered_data:
-        st.success(f"Successfully loaded {len(filtered_data)} {card_type} flashcards!")
+        <div class="text-gray-500 mb-4" id="card-counter"></div>
 
-        # Use session state to manage the current card index
-        if 'card_index' not in st.session_state or 'card_type' not in st.session_state or st.session_state.card_type != card_type:
-            st.session_state.card_index = 0
-            st.session_state.card_type = card_type
-            st.session_state.show_translation = False
+        <div class="card-content border border-gray-300 rounded-xl p-6 w-full flex flex-col justify-center items-center">
+            <div id="chinese-text" class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-4 text-center"></div>
+            <div id="english-text" class="text-xl sm:text-2xl text-gray-600 transition-opacity duration-300 ease-in-out opacity-0 mt-4 text-center"></div>
+        </div>
         
-        # Get the current flashcard from the filtered data
-        current_card = filtered_data[st.session_state.card_index]
+        <div class="flex flex-wrap justify-center gap-4 mt-8 w-full">
+            <button id="show-hide-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Show/Hide English
+            </button>
+            <button id="next-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                Next Card
+            </button>
+            <button id="shuffle-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50">
+                Shuffle Cards
+            </button>
+        </div>
+    </div>
 
-        # Display the Chinese side of the flashcard first
-        st.header(f"Card {st.session_state.card_index + 1}/{len(filtered_data)}")
-        st.markdown(f"**Chinese Translation:**")
-        st.info(current_card['chinese'])
+    <script>
+        const flashcardData = [
+            { "category": "Hometown", "chinese": "它是中国东北部的一座重要的沿海城市，位于北京以东，紧邻海岸线。", "english": "It is a major coastal city in northeast China, located east of Beijing along the shoreline.", "type": "sentence" },
+            { "category": "Hometown", "chinese": "这座城市多元而迷人，老租界区保留了意式和英式建筑的精彩融合。", "english": "The city is diverse and charming, with a splendid mix of Italian and British architecture in the old concession area.", "type": "sentence" },
+            { "category": "Accommodation", "chinese": "我目前住在学校的宿舍里，人多且不太方便。", "english": "I’m currently staying in a campus dorm; it’s crowded and not very convenient.", "type": "sentence" },
+            { "category": "Accommodation", "chinese": "我想搬到公寓去，这样就有私人空间可以学习和休息。", "english": "I’d like to move to a flat so I have private space to study and rest.", "type": "sentence" },
+            { "category": "Studies", "chinese": "我在大学学习护理，主要涉及人类健康和病患护理。", "english": "I study nursing at university, focusing on human health and patient care.", "type": "sentence" },
+            { "category": "Studies", "chinese": "说实话，这并不是我的选择，是父母替我选的，因为他们认为护士收入稳定。", "english": "To be honest, it wasn’t my choice; my parents chose it because they believe nursing offers a stable income.", "type": "sentence" },
+            { "category": "Studies", "chinese": "我对临终关怀充满热情，这个专业让我能在这一方向做研究并深入探索。", "english": "I’m passionate about hospice care, and this major lets me research and dive deep into that field.", "type": "sentence" },
+            { "category": "Study Preference", "chinese": "我更喜欢独自学习，这样更容易保持清晰的逻辑思维。", "english": "I prefer studying alone because it helps me think logically.", "type": "sentence" },
+            { "category": "Workload", "chinese": "学习护理改变了我的生活；我几乎每天都很累，周末也常被占用。", "english": "Learning nursing has changed my life; I feel tired every day and my weekends are often occupied.", "type": "sentence" },
+            { "category": "Career", "chinese": "我还没决定未来做什么，但我更想成为大学老师，而不是护士。", "english": "I haven’t decided on a career, but I’d prefer to be a university teacher rather than a nurse.", "type": "sentence" },
+            { "category": "Leisure", "chinese": "空闲时我常待在室内玩电子游戏，让自己放松并短暂逃离现实。", "english": "In my free time I usually stay indoors and play video games to relax and escape for a while.", "type": "sentence" },
+            { "category": "Reading", "chinese": "我喜欢在网上读小说，电子书方便，也能激发我的想象力。", "english": "I enjoy reading online novels; e-books are convenient and they spark my imagination.", "type": "sentence" },
+            { "category": "Music", "chinese": "我听很多类型的音乐，其中我最喜欢的是节奏布鲁斯，尤其是低音与鼓点的配合很优雅。", "english": "I listen to many genres, but I like R&B the most, especially the elegant blend of bass and drums.", "type": "sentence" },
+            { "category": "Leisure Preference", "chinese": "我更喜欢室内活动，比如在家玩游戏或补觉来恢复精力。", "english": "I prefer indoor activities, like staying home to play games or sleep in to recharge.", "type": "sentence" },
+            { "category": "Change in Hobbies", "chinese": "小时候我爱和父母去徒步，现在更喜欢待在家里。", "english": "As a child I loved hiking with my parents, but now I prefer staying at home.", "type": "sentence" },
+            { "category": "Hobby Value", "chinese": "生活有时很辛苦，兴趣爱好能带来安慰与平衡。", "english": "Life can be tough, and hobbies provide comfort and balance.", "type": "sentence" },
+            { "category": "New Hobby", "chinese": "我想学摄影，我很喜欢为朋友和自然风景拍照，但目前还是业余水平。", "english": "I’d like to learn photography; I enjoy shooting friends and natural scenery, though I’m still an amateur.", "type": "sentence" },
+            { "category": "Typical Day", "chinese": "我的日常比较单调，我常常一大早起床，在教学楼待上一整天。", "english": "My routine is quite plain: I get up early and spend almost the whole day in the teaching buildings.", "type": "sentence" },
+            { "category": "Breakfast Tradeoff", "chinese": "教学楼离宿舍很远，为了吃早餐我得更早起，这对我来说不值得。", "english": "The buildings are far from my dorm, so eating breakfast would mean getting up even earlier, which isn’t worth it to me.", "type": "sentence" },
+            { "category": "Schedule", "chinese": "课程表已经固定，我必须完成这套课程才能获得学士学位。", "english": "The schedule is fixed, and I need to complete the curriculum to earn my bachelor’s degree.", "type": "sentence" },
+            { "category": "Sleep", "chinese": "以前没有早课的早晨我会自然醒，但现在几乎每天都有早课，这种享受变成了奢侈。", "english": "I used to sleep until I woke naturally on class-free mornings, but with morning classes almost every day, that’s become a luxury.", "type": "sentence" },
+            { "category": "Evening Study", "chinese": "我喜欢在晚上学习，有时也会玩游戏；夜晚安静，更利于思考和享受个人空间。", "english": "I like studying in the evening and sometimes playing games; the quiet night helps me think and enjoy personal space.", "type": "sentence" },
+            { "category": "Leisure Activities", "chinese": "闲暇时我常玩游戏，也会去学校的游泳池游泳。", "english": "In my spare time I often play games and go swimming at the university pool.", "type": "sentence" },
+            { "category": "Chronotype", "chinese": "我是个夜猫子，更喜欢晚睡，因为夜深人静时我最专注、效率最高。", "english": "I’m a night owl and prefer going to bed late because I’m most focused and productive at night.", "type": "sentence" },
+            { "category": "Vacations", "chinese": "假期回家时我通常太累，不太有心情见亲戚，只想好好休息。", "english": "When I go home for vacations I’m usually too tired to visit relatives and just want to rest.", "type": "sentence" },
+            { "category": "Friends", "chinese": "我和朋友上了不同的大学，课程都很重，见面时间很少，但我们会在网上聊天并计划假期见面。", "english": "My friends and I attend different universities and have heavy workloads, so we meet rarely, but we chat online and plan to meet during vacations.", "type": "sentence" },
+            { "category": "Friends", "chinese": "我们都是宅属性，平时多在家玩游戏，偶尔假期会出去旅行拍照留念。", "english": "We’re homebodies who usually stay in and play games, but we sometimes travel on holidays to take photos and make memories.", "type": "sentence" },
+            { "category": "Social Circle", "chinese": "我更喜欢小圈子的朋友关系，真正的友情看重质量而非数量。", "english": "I prefer a small circle of friends; true friendship is about quality, not quantity.", "type": "sentence" },
+            { "category": "Family Time", "chinese": "自从上大学以后，我回家乡的时间变少了，也更难与家人朋友常常相聚。", "english": "Since starting university I spend less time in my hometown and it’s harder to see family and friends often.", "type": "sentence" },
+            { "category": "Family", "chinese": "我和母亲最亲近；父亲因工作常年在外，母亲在我成长中承担了主要照顾。", "english": "I’m closest to my mother; my father worked away from home, so she took the lead in raising me.", "type": "sentence" },
+            { "category": "Family", "chinese": "我家有四口人：父母、我和妹妹，家庭氛围温暖。", "english": "There are four people in my family—my parents, my younger sister, and me—and our home feels warm.", "type": "sentence" },
+            { "category": "Food Preference", "chinese": "我喜欢脆的食物，薯片或生菜的咔嚓声让我格外满足。", "english": "I love crispy food; the crunch of potato chips or lettuce is especially satisfying.", "type": "sentence" },
+            { "category": "Cooking", "chinese": "我从中学起就开始做饭，父母外出时会给妹妹做吃的，现在也常和父母一起下厨。", "english": "I’ve been cooking since secondary school, making meals for my sister when my parents were out, and now I often cook with my parents.", "type": "sentence" },
+            { "category": "Cooking", "chinese": "谁做饭取决于谁有空；爸妈都很会做菜，我和妹妹都很喜欢他们的手艺。", "english": "Who cooks depends on who’s available; both my parents are good cooks and my sister and I love their dishes.", "type": "sentence" },
+            { "category": "Eating Preference", "chinese": "我更喜欢在家吃饭，父母做的菜味道好，而且家常菜更卫生也更有营养。", "english": "I prefer eating at home; my parents’ dishes taste great, and home-cooked meals are cleaner and more nutritious.", "type": "sentence" },
+            { "category": "Cuisine", "chinese": "我最喜欢中国菜，种类多、口味均衡，而且我从小就习惯了。", "english": "My favorite cuisine is Chinese; it’s diverse, well balanced, and it’s what I grew up with.", "type": "sentence" },
+            { "category": "Cooking Experience", "chinese": "在新冠期间我真正学会了做饭，一边上网课一边每天做菜照顾家人。", "english": "I truly learned to cook during COVID, juggling online classes while cooking daily for my family.", "type": "sentence" },
+            { "category": "Food Dislike", "chinese": "我不挑食，但无法接受茄子的味道，多种做法都让我反胃，可能还对它过敏。", "english": "I’m not a picky eater, but I can’t stand eggplant; every method I tried made me nauseous, and I may be allergic to it.", "type": "sentence" },
+            { "category": "Shopping", "chinese": "我更常在网上购物，方便也能买到二手和数字商品。", "english": "I usually shop online; it’s convenient and I can buy second-hand and digital goods.", "type": "sentence" },
+            { "category": "Shopping", "chinese": "我对衣服欲望不强，大多是妈妈帮我买的，偶尔会被短视频广告种草而冲动下单。", "english": "I don’t care much about clothes and most were bought by my mom, though short-video ads sometimes trigger impulse purchases.", "type": "sentence" },
+            { "category": "Shopping Preference", "chinese": "我偏爱网购，选择更多，也比线下更省时间。", "english": "I prefer online shopping because the selection is wider and it saves time compared with stores.", "type": "sentence" },
+            { "category": "Style", "chinese": "我常穿运动装，轻便舒适、活动自如，在校园里也很常见。", "english": "I tend to wear sportswear; it’s lightweight, allows free movement, and it’s common on campus.", "type": "sentence" },
+            { "category": "Fashion View", "chinese": "我不盲目追潮流，因为流行标准总是由他人制定的。", "english": "I don’t blindly follow trends because fashion standards are set by others.", "type": "sentence" },
+            { "category": "Buying Clothes", "chinese": "我多在网上买衣服，选择多、没有销售压力，还能参考真实评价。", "english": "I usually buy clothes online for the massive selection, no sales pressure, and access to real reviews.", "type": "sentence" },
+            { "category": "Brand Importance", "chinese": "品牌对我来说是次要的，我更看重面料的手感和活动是否自如。", "english": "Brand names are secondary; I care more about how the fabric feels and whether I can move freely.", "type": "sentence" },
+            { "category": "Climate", "chinese": "我家乡是典型的温带气候，四季分明，夏季炎热多雨，冬季寒冷干燥。", "english": "My hometown has a typical temperate climate with distinct seasons: hot, rainy summers and cold, dry winters.", "type": "sentence" },
+            { "category": "Music & Artist", "chinese": "我想谈一位我非常敬佩的创意型歌手——唱作人林俊杰（JJ Lin）。", "english": "I’d like to talk about a creative artist I greatly admire—the singer-songwriter JJ Lin.", "type": "sentence" },
+            { "category": "Music & Artist", "chinese": "他的本名是林俊杰（Wayne Lin），但大家都用他的艺名 JJ Lin 来称呼他。", "english": "His birth name is Wayne Lin, but everyone knows him by his stage name, JJ Lin.", "type": "sentence" },
+            { "category": "Music & Artist", "chinese": "他是新加坡出生的华语流行歌手。", "english": "He is a Mandopop singer born in Singapore.", "type": "sentence" },
+            { "category": "Music Preference", "chinese": "我最喜欢的音乐类型是华语流行。", "english": "My favorite genre is Mandopop.", "type": "sentence" },
+            { "category": "Music & Memory", "chinese": "我从小学起就听他的歌。", "english": "I’ve known his music since primary school.", "type": "sentence" },
+            { "category": "Music & Memory", "chinese": "我第一次在妈妈的车里通过电台听到他的一首成名曲。", "english": "I first heard one of his early hits on the radio in my mother’s car.", "type": "sentence" },
+            { "category": "Music & Memory", "chinese": "他独特的嗓音和有冲击力的旋律立刻吸引了我。", "english": "His distinctive voice and strong melodies captivated me immediately.", "type": "sentence" },
+            { "category": "Music & Memory", "chinese": "从那天起我就开始关注他的作品，直到今天他仍是我最喜欢的歌手。", "english": "Ever since that day I’ve followed his work, and he’s still my favorite artist.", "type": "sentence" },
+            { "category": "Artistic Strengths", "chinese": "他不仅会唱，还创作并谱写了大部分歌曲。", "english": "He’s not just a singer; he writes and composes most of his songs.", "type": "sentence" },
+            { "category": "Artistic Strengths", "chinese": "他嗓音出色，钢琴和吉他也弹得很好。", "english": "He has an excellent voice and plays both piano and guitar very well.", "type": "sentence" },
+            { "category": "Artistic Strengths", "chinese": "他善于融合流行与节奏布鲁斯等不同风格，作品既抓耳又富有情感。", "english": "He blends pop with R&B and other styles, making music that is both catchy and emotional.", "type": "sentence" },
+            { "category": "Work Ethic", "chinese": "我尊敬的是他严谨的态度：成名多年仍投入大量时间打磨每一张专辑。", "english": "I respect his seriousness: despite years of fame, he still invests a lot of time perfecting each album.", "type": "sentence" },
+            { "category": "Inspiration", "chinese": "听他的歌让我受到鼓舞，他证明了天赋与投入同样重要。", "english": "Listening to his songs inspires me; he proves that talent and dedication both matter.", "type": "sentence" },
+            { "category": "Family & Friendship", "chinese": "我想谈一位对我非常重要的人——我最亲密的朋友，也是我的妹妹：Ruby。", "english": "I’d like to talk about a very important person—my closest friend and my younger sister, Ruby.", "type": "sentence" },
+            { "category": "Family & Hometown", "chinese": "我们都来自天津这座美丽的海滨城市，分享了无数共同回忆。", "english": "We’re both from Tianjin, a beautiful coastal city where we share countless memories.", "type": "sentence" },
+            { "category": "First Meeting", "chinese": "她出生时我九岁，在医院里我第一次看到熟睡的她躺在婴儿床上。", "english": "I was nine when she was born; I first saw her asleep in a crib beside my mother in the hospital.", "type": "sentence" },
+            { "category": "Siblings", "chinese": "起初我有点吃醋，但很快就习惯了有个妹妹的生活。", "english": "I felt a little jealous at first, but I quickly got used to having a baby sister.", "type": "sentence" },
+            { "category": "Bond", "chinese": "我们的血缘让这段关系比任何友情都更深。", "english": "Our blood tie makes our bond deeper than any friendship.", "type": "sentence" },
+            { "category": "Support", "chinese": "无论我需要建议、倾听或分心，她总在我身边。", "english": "Whether I need advice, a listener, or a distraction, she is always there for me.", "type": "sentence" },
+            { "category": "Gratitude", "chinese": "她不仅是妹妹，更像与生俱来的挚友，我由衷感激她的陪伴。", "english": "She isn’t just my sister; she’s a built-in best friend, and I’m truly grateful for her presence.", "type": "sentence" },
+            { "category": "Mentor", "chinese": "我想谈一位鼓舞人心的导师——我大学时的班主任，她也是附属医院的护士长。", "english": "I’d like to talk about an inspiring mentor—my university class advisor, who was also the head nurse at the affiliated hospital.", "type": "sentence" },
+            { "category": "Background", "chinese": "她来自中国西北的一座小城，我们在大一认识，大二因她教授的临终关怀课程而更加熟悉。", "english": "She comes from a small city in northwest China; we met in my freshman year and connected more deeply in sophomore year through her hospice care course.", "type": "sentence" },
+            { "category": "Teaching", "chinese": "她传授了许多课本里没有的内容，用真实经验教会我们同理与沟通的重要性。", "english": "She taught what textbooks couldn’t, using real experience to show the importance of empathy and communication.", "type": "sentence" },
+            { "category": "Character", "chinese": "她对每个人都极有耐心，遇到复杂情况也始终镇定支持。", "english": "She was extremely patient with everyone and stayed calm and supportive in complex situations.", "type": "sentence" },
+            { "category": "Balance", "chinese": "她工作与生活平衡，是不以过劳为代价取得成功的榜样。", "english": "She balanced work and life and showed that success doesn’t require burnout.", "type": "sentence" },
+            { "category": "Impact", "chinese": "她不仅教育了我，更引导了我，塑造了我对职业与仁心的理解。", "english": "She didn’t just educate me; she guided me and shaped my understanding of professionalism and compassion.", "type": "sentence" },
+            { "category": "Esports", "chinese": "他来自韩国首尔，在韩国长大受教育，最终走上职业电竞之路。", "english": "He is from Seoul, South Korea, where he grew up and studied before turning professional in esports.", "type": "sentence" },
+            { "category": "Esports", "chinese": "我在关注《英雄联盟》全球总决赛时认识了 Faker。", "english": "I learned about Faker while following the League of Legends World Championship.", "type": "sentence" },
+            { "category": "Achievements", "chinese": "自2013年他带领 SKT T1 首夺世界冠军起，他的表现与影响力就难以忽视。", "english": "Since leading SKT T1 to their first world title in 2013, his performances and impact have been impossible to ignore.", "type": "sentence" },
+            { "category": "Role Model", "chinese": "他以天赋、职业态度、持续学习与谦逊著称，多次低谷后仍能重返巅峰。", "english": "He’s known for talent, professionalism, continual learning, and humility, returning to the top even after setbacks.", "type": "sentence" },
+            { "category": "Inspiration", "chinese": "他让我明白真正的成就来自长期坚持与自我超越。", "english": "He taught me that true achievement comes from long-term persistence and self-improvement.", "type": "sentence" },
+            { "category": "Travel: Iceland", "chinese": "冰岛以原始壮丽的自然闻名：黑沙滩、地热温泉与巨大的冰原。", "english": "Iceland is famed for raw, dramatic nature: black-sand beaches, geothermal hot springs, and vast ice caps.", "type": "sentence" },
+            { "category": "Travel: Iceland", "chinese": "我最想看的景象是极光，那是此生难忘的体验。", "english": "The sight I want most is the aurora; it’s a once-in-a-lifetime experience.", "type": "sentence" },
+            { "category": "Travel Plan", "chinese": "我计划自驾环岛公路，沿途徒步瀑布与冰川，并在偏远地区追逐极光。", "english": "I plan to drive the Ring Road, hike to waterfalls and glaciers, and chase the northern lights from remote areas.", "type": "sentence" },
+            { "category": "Companion", "chinese": "我想和最要好的朋友一起去，因为我们都热爱自然与冒险。", "english": "I’d like to go with my closest friend because we both love nature and adventure.", "type": "sentence" },
+            { "category": "Feeling", "chinese": "在我心中，冰岛充满神秘，能让人感受到自然的伟力与谦卑。", "english": "To me Iceland feels mystical, revealing nature’s power and a humbling sense of awe.", "type": "sentence" },
+            { "category": "Culture & Heritage", "chinese": "我在学习中国文化与古建筑时从历史课本中第一次了解到它，它名声斐然。", "english": "I first learned about it from my history textbook while studying Chinese culture and ancient architecture; its reputation is outstanding.", "type": "sentence" },
+            { "category": "Culture & Heritage", "chinese": "真正特别的是它近一千七百年的历史，以及相邻的飞来峰石窟。", "english": "What’s unique is its nearly 1,700-year history and the neighboring Feilai Peak grottoes.", "type": "sentence" },
+            { "category": "Art & Spirituality", "chinese": "数百尊佛像直接雕刻在石灰岩崖面上，艺术与宗教精神交相辉映。", "english": "Hundreds of Buddhas are carved directly into limestone cliffs, blending art with spiritual heritage.", "type": "sentence" },
+            { "category": "Visit Motivation", "chinese": "我被它深厚的历史与宁静氛围所吸引，想从繁忙城市中抽身。", "english": "Its deep history and tranquil atmosphere attract me; I want a break from city life.", "type": "sentence" },
+            { "category": "Family Trip", "chinese": "我想和家人一起去，在静谧中共同欣赏这些令人惊叹的佛教艺术。", "english": "I want to go with my family so we can appreciate the stunning Buddhist art in peace.", "type": "sentence" },
+            { "category": "On-site Plan", "chinese": "我会慢慢游览寺庙，细看雕像与繁复的雕刻，并沉浸在安宁之中。", "english": "I’d explore slowly, study the statues and intricate carvings, and soak in the serenity.", "type": "sentence" },
+            { "category": "Reflection", "chinese": "这段体验会带来平静与谦卑，也提供历史洞见与安静反思的机会。", "english": "The experience would feel calming and humbling, offering both historical insight and quiet reflection.", "type": "sentence" },
+            { "category": "Sports & Childhood", "chinese": "首先，这家体育中心培养了许多优秀运动员，他们在各类赛事中摘得奖牌。", "english": "First, this sports center has trained many outstanding athletes who have won medals in various events.", "type": "sentence" },
+            { "category": "Sports & Childhood", "chinese": "其次，假期里我几乎每天都去那里练习游泳，这是我珍贵的童年回忆。", "english": "Second, I went there to swim almost every day during holidays, which is a treasured childhood memory.", "type": "sentence" }
+        ];
 
-        # Use columns to place the buttons side-by-side below the Chinese translation
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Next Card"):
-                st.session_state.card_index = (st.session_state.card_index + 1) % len(filtered_data)
-                st.session_state.show_translation = False
-                st.rerun()
+        let filteredData = [];
+        let cardIndex = 0;
+        let showTranslation = false;
 
-        with col2:
-            if st.button("Shuffle Cards"):
-                random.shuffle(filtered_data)
-                st.session_state.card_index = 0
-                st.session_state.show_translation = False
-                st.rerun()
+        const chineseText = document.getElementById('chinese-text');
+        const englishText = document.getElementById('english-text');
+        const cardCounter = document.getElementById('card-counter');
+        const showHideBtn = document.getElementById('show-hide-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const cardTypeRadios = document.getElementsByName('card_type');
 
-        # Button to toggle the English translation
-        if st.button("Show/Hide English"):
-            st.session_state.show_translation = not st.session_state.show_translation
+        function filterAndShuffleCards() {
+            const selectedType = document.querySelector('input[name="card_type"]:checked').value;
+            filteredData = flashcardData.filter(card => card.type === selectedType);
+            shuffleArray(filteredData);
+            cardIndex = 0;
+            showTranslation = false;
+        }
 
-        # Display the English side if the toggle is on
-        if st.session_state.show_translation:
-            st.markdown(f"**English:**")
-            st.success(current_card['english'])
-    else:
-        st.info(f"No {card_type} flashcards found in the data.")
-else:
-    st.info("No flashcard data to display. Please check your 'data.json' file.")
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function renderCard() {
+            if (filteredData.length === 0) {
+                chineseText.innerText = "No cards available.";
+                englishText.innerText = "";
+                englishText.classList.add('opacity-0');
+                cardCounter.innerText = "0/0";
+                return;
+            }
+
+            const currentCard = filteredData[cardIndex];
+            chineseText.innerText = currentCard.chinese;
+            englishText.innerText = currentCard.english;
+            
+            if (showTranslation) {
+                englishText.classList.remove('opacity-0');
+            } else {
+                englishText.classList.add('opacity-0');
+            }
+            cardCounter.innerText = `${cardIndex + 1}/${filteredData.length}`;
+        }
+
+        function handleShowHide() {
+            showTranslation = !showTranslation;
+            renderCard();
+        }
+
+        function handleNextCard() {
+            cardIndex = (cardIndex + 1) % filteredData.length;
+            showTranslation = false;
+            renderCard();
+        }
+
+        function handleShuffle() {
+            filterAndShuffleCards();
+            renderCard();
+        }
+
+        showHideBtn.addEventListener('click', handleShowHide);
+        nextBtn.addEventListener('click', handleNextCard);
+        shuffleBtn.addEventListener('click', handleShuffle);
+
+        cardTypeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                filterAndShuffleCards();
+                renderCard();
+            });
+        });
+
+        // Initial setup
+        window.onload = () => {
+            filterAndShuffleCards();
+            renderCard();
+        };
+
+    </script>
+</body>
+</html>
+"""
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    """
+    Renders the HTML content of the flashcard application.
+    """
+    return render_template_string(HTML_CONTENT)
+
+if __name__ == '__main__':
+    # Running the Flask app in debug mode.
+    # The app will be accessible at http://127.0.0.1:5000/
+    app.run(debug=True)
+"""
