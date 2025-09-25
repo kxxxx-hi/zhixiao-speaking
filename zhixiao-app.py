@@ -1,4 +1,6 @@
 from flask import Flask, jsonify, request
+import json
+import os
 
 app = Flask(__name__)
 
@@ -14,16 +16,21 @@ def home():
         "status": "success"
     })
 
-# A route that takes a name as a URL parameter
-@app.route('/greet/<name>')
-def greet(name):
+# New route to serve the flashcard data from data.json
+@app.route('/flashcards')
+def get_flashcards():
     """
-    A route to greet a user by name.
+    This route reads the flashcard data from the data.json file
+    and returns it as a JSON object.
     """
-    return jsonify({
-        "message": f"Hello, {name}!",
-        "status": "success"
-    })
+    # Construct the full path to the data.json file
+    file_path = os.path.join(os.path.dirname(__file__), '..', 'data.json')
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except FileNotFoundError:
+        return jsonify({"error": "data.json file not found"}), 404
 
 # The entry point for Vercel
 # This is required for Vercel to know where to find your app
