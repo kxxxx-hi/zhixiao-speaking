@@ -1,199 +1,101 @@
+import streamlit as st
 import json
-from flask import Flask, render_template_string
+import random
 
-# The HTML content of the flashcard application, now templated to receive data.
-HTML_CONTENT = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-        .flashcard-container {
-            width: 100%;
-            max-width: 640px;
-            background-color: #ffffff;
-            border-radius: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            min-height: 500px;
-        }
-        .card-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            width: 100%;
-        }
-        .card-content p {
-            font-size: 1.5rem;
-            line-height: 1.75rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="flashcard-container">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">English-Chinese Flashcards</h1>
-        <hr class="w-full h-1 bg-gray-200 rounded my-4">
-        
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6 w-full">
-            <div class="flex items-center space-x-2">
-                <input type="radio" id="sentences" name="card_type" value="sentence" class="form-radio text-blue-600 h-4 w-4" checked>
-                <label for="sentences" class="text-lg font-medium text-gray-700">Sentences</label>
-            </div>
-            <div class="flex items-center space-x-2">
-                <input type="radio" id="vocabulary" name="card_type" value="vocabulary" class="form-radio text-blue-600 h-4 w-4">
-                <label for="vocabulary" class="text-lg font-medium text-gray-700">Vocabulary</label>
-            </div>
-        </div>
-
-        <div class="text-gray-500 mb-4" id="card-counter"></div>
-
-        <div class="card-content border border-gray-300 rounded-xl p-6 w-full flex flex-col justify-center items-center">
-            <div id="chinese-text" class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-4 text-center"></div>
-            <div id="english-text" class="text-xl sm:text-2xl text-gray-600 transition-opacity duration-300 ease-in-out opacity-0 mt-4 text-center"></div>
-        </div>
-        
-        <div class="flex flex-wrap justify-center gap-4 mt-8 w-full">
-            <button id="show-hide-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-                Show/Hide English
-            </button>
-            <button id="next-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
-                Next Card
-            </button>
-            <button id="shuffle-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50">
-                Shuffle Cards
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // The flashcard data is now dynamically injected by Flask
-        const flashcardData = {{ flashcard_data | tojson }};
-
-        let filteredData = [];
-        let cardIndex = 0;
-        let showTranslation = false;
-
-        const chineseText = document.getElementById('chinese-text');
-        const englishText = document.getElementById('english-text');
-        const cardCounter = document.getElementById('card-counter');
-        const showHideBtn = document.getElementById('show-hide-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const shuffleBtn = document.getElementById('shuffle-btn');
-        const cardTypeRadios = document.getElementsByName('card_type');
-
-        function filterAndShuffleCards() {
-            const selectedType = document.querySelector('input[name="card_type"]:checked').value;
-            filteredData = flashcardData.filter(card => card.type === selectedType);
-            shuffleArray(filteredData);
-            cardIndex = 0;
-            showTranslation = false;
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function renderCard() {
-            if (filteredData.length === 0) {
-                chineseText.innerText = "No cards available.";
-                englishText.innerText = "";
-                englishText.classList.add('opacity-0');
-                cardCounter.innerText = "0/0";
-                return;
-            }
-
-            const currentCard = filteredData[cardIndex];
-            chineseText.innerText = currentCard.chinese;
-            englishText.innerText = currentCard.english;
-            
-            if (showTranslation) {
-                englishText.classList.remove('opacity-0');
-            } else {
-                englishText.classList.add('opacity-0');
-            }
-            cardCounter.innerText = `${cardIndex + 1}/${filteredData.length}`;
-        }
-
-        function handleShowHide() {
-            showTranslation = !showTranslation;
-            renderCard();
-        }
-
-        function handleNextCard() {
-            cardIndex = (cardIndex + 1) % filteredData.length;
-            showTranslation = false;
-            renderCard();
-        }
-
-        function handleShuffle() {
-            filterAndShuffleCards();
-            renderCard();
-        }
-
-        showHideBtn.addEventListener('click', handleShowHide);
-        nextBtn.addEventListener('click', handleNextCard);
-        shuffleBtn.addEventListener('click', handleShuffle);
-
-        cardTypeRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                filterAndShuffleCards();
-                renderCard();
-            });
-        });
-
-        // Initial setup
-        window.onload = () => {
-            filterAndShuffleCards();
-            renderCard();
-        };
-
-    </script>
-</body>
-</html>
-"""
-
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    """
-    Renders the HTML content of the flashcard application.
-    The flashcard data is read from a JSON file and passed to the template.
-    """
+def load_data():
+    """Load flashcard data from the data.json file."""
     try:
         with open('data.json', 'r', encoding='utf-8') as f:
-            flashcard_data = json.load(f)["flashcards"]
+            data = json.load(f)["flashcards"]
+        return data
     except FileNotFoundError:
-        flashcard_data = [] # Return empty data if the file is not found
+        st.error("The 'data.json' file was not found. Please make sure it's in the same directory.")
+        return []
 
-    return render_template_string(HTML_CONTENT, flashcard_data=flashcard_data)
+def initialize_session_state():
+    """Initialize or reset the session state variables."""
+    if 'flashcards' not in st.session_state:
+        st.session_state.flashcards = load_data()
+    if 'filtered_cards' not in st.session_state:
+        st.session_state.filtered_cards = []
+    if 'card_index' not in st.session_state:
+        st.session_state.card_index = 0
+    if 'show_english' not in st.session_state:
+        st.session_state.show_english = False
+    if 'card_type' not in st.session_state:
+        st.session_state.card_type = 'sentence'
 
-if __name__ == '__main__':
-    # Running the Flask app in debug mode.
-    # The app will be accessible at http://127.0.0.1:5000/
-    app.run(debug=True)
+def filter_and_shuffle_cards():
+    """Filter cards based on type and shuffle them."""
+    st.session_state.filtered_cards = [
+        card for card in st.session_state.flashcards
+        if card['type'] == st.session_state.card_type
+    ]
+    random.shuffle(st.session_state.filtered_cards)
+    st.session_state.card_index = 0
+    st.session_state.show_english = False
+
+def show_next_card():
+    """Move to the next flashcard in the deck."""
+    if st.session_state.filtered_cards:
+        st.session_state.card_index = (st.session_state.card_index + 1) % len(st.session_state.filtered_cards)
+        st.session_state.show_english = False
+        st.experimental_rerun()
+
+def main():
+    """Main function to run the Streamlit application."""
+    st.title("English-Chinese Flashcards")
+
+    # Initialize session state on first run
+    initialize_session_state()
+
+    # Filter and shuffle cards on first load or when card type changes
+    if 'card_type_changed' not in st.session_state or st.session_state.card_type_changed:
+        filter_and_shuffle_cards()
+        st.session_state.card_type_changed = False
+
+    # Radio buttons to select flashcard type
+    card_type = st.radio(
+        "Select card type:",
+        ('sentence', 'vocabulary'),
+        horizontal=True,
+        key='card_type_selector'
+    )
+
+    # Check if the card type has changed and update state
+    if card_type != st.session_state.card_type:
+        st.session_state.card_type = card_type
+        st.session_state.card_type_changed = True
+        st.experimental_rerun()
+
+    # Display the current card
+    if st.session_state.filtered_cards:
+        current_card = st.session_state.filtered_cards[st.session_state.card_index]
+        
+        # Display Chinese text
+        st.markdown(f"**<p style='font-size: 24px; text-align: center;'>{current_card['chinese']}</p>**", unsafe_allow_html=True)
+        
+        # Display English translation with conditional visibility
+        if st.session_state.show_english:
+            st.markdown(f"<p style='font-size: 20px; text-align: center; color: #6b7280;'>{current_card['english']}</p>", unsafe_allow_html=True)
+        
+        # Display card counter
+        st.markdown(
+            f"<p style='text-align: center; color: #9ca3af;'>{st.session_state.card_index + 1}/{len(st.session_state.filtered_cards)}</p>",
+            unsafe_allow_html=True
+        )
+
+        # Buttons
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.button("Show/Hide English", on_click=lambda: st.session_state.update(show_english=not st.session_state.show_english), use_container_width=True)
+        with col2:
+            st.button("Next Card", on_click=show_next_card, use_container_width=True)
+        with col3:
+            st.button("Shuffle Cards", on_click=filter_and_shuffle_cards, use_container_width=True)
+
+    else:
+        st.info("No flashcards found for this category.")
+
+if __name__ == "__main__":
+    main()
