@@ -1,0 +1,278 @@
+[
+{
+"category": "Hometown",
+"chinese": "它是中国东北部的一座重要的沿海城市，位于北京以东，紧邻海岸线。",
+"english": "It is a major coastal city in northeast China, located east of Beijing along the shoreline.",
+"type": "sentence"
+},
+{
+"category": "Hometown",
+"chinese": "这座城市多元而迷人，老租界区保留了意式和英式建筑的精彩融合。",
+"english": "The city is diverse and charming, with a splendid mix of Italian and British architecture in the old concession area.",
+"type": "sentence"
+},
+{
+"category": "Accommodation",
+"chinese": "我目前住在学校的宿舍里，人多且不太方便。",
+"english": "I’m currently staying in a campus dorm; it’s crowded and not very convenient.",
+"type": "sentence"
+},
+{
+"category": "Accommodation",
+"chinese": "我想搬到公寓去，这样就有私人空间可以学习和休息。",
+"english": "I’d like to move to a flat so I have private space to study and rest.",
+"type": "sentence"
+},
+{
+"category": "Studies",
+"chinese": "我在大学学习护理，主要涉及人类健康和病患护理。",
+"english": "I study nursing at university, focusing on human health and patient care.",
+"type": "sentence"
+},
+{
+"category": "Studies",
+"chinese": "说实话，这并不是我的选择，是父母替我选的，因为他们认为护士收入稳定。",
+"english": "To be honest, it wasn’t my choice; my parents chose it because they believe nursing offers a stable income.",
+"type": "sentence"
+},
+{
+"category": "Studies",
+"chinese": "我对临终关怀充满热情，这个专业让我能在这一方向做研究并深入探索。",
+"english": "I’m passionate about hospice care, and this major lets me research and dive deep into that field.",
+"type": "sentence"
+},
+{
+"category": "Study Preference",
+"chinese": "我更喜欢独自学习，这样更容易保持清晰的逻辑思维。",
+"english": "I prefer studying alone because it helps me think logically.",
+"type": "sentence"
+},
+{
+"category": "Workload",
+"chinese": "学习护理改变了我的生活；我几乎每天都很累，周末也常被占用。",
+"english": "Learning nursing has changed my life; I feel tired every day and my weekends are often occupied.",
+"type": "sentence"
+},
+{
+"category": "Career",
+"chinese": "我还没决定未来做什么，但我更想成为大学老师，而不是护士。",
+"english": "I haven’t decided on a career, but I’d prefer to be a university teacher rather than a nurse.",
+"type": "sentence"
+},
+{
+"category": "Leisure",
+"chinese": "空闲时我常待在室内玩电子游戏，让自己放松并短暂逃离现实。",
+"english": "In my free time I usually stay indoors and play video games to relax and escape for a while.",
+"type": "sentence"
+},
+{
+"category": "Reading",
+"chinese": "我喜欢在网上读小说，电子书方便，也能激发我的想象力。",
+"english": "I enjoy reading online novels; e-books are convenient and they spark my imagination.",
+"type": "sentence"
+},
+{
+"category": "Music",
+"chinese": "我听很多类型的音乐，其中我最喜欢的是节奏布鲁斯，尤其是低音与鼓点的配合很优雅。",
+"english": "I listen to many genres, but I like R\&B the most, especially the elegant blend of bass and drums.",
+"type": "sentence"
+},
+{
+"category": "Leisure Preference",
+"chinese": "我更喜欢室内活动，比如在家玩游戏或补觉来恢复精力。",
+"english": "I prefer indoor activities, like staying home to play games or sleep in to recharge.",
+"type": "sentence"
+},
+{
+"category": "Change in Hobbies",
+"chinese": "小时候我爱和父母去徒步，现在更喜欢待在家里。",
+"english": "As a child I loved hiking with my parents, but now I prefer staying at home.",
+"type": "sentence"
+},
+{
+"category": "Hobby Value",
+"chinese": "生活有时很辛苦，兴趣爱好能带来安慰与平衡。",
+"english": "Life can be tough, and hobbies provide comfort and balance.",
+"type": "sentence"
+},
+{
+"category": "New Hobby",
+"chinese": "我想学摄影，我很喜欢为朋友和自然风景拍照，但目前还是业余水平。",
+"english": "I’d like to learn photography; I enjoy shooting friends and natural scenery, though I’m still an amateur.",
+"type": "sentence"
+},
+{
+"category": "Typical Day",
+"chinese": "我的日常比较单调，我常常一大早起床，在教学楼待上一整天。",
+"english": "My routine is quite plain: I get up early and spend almost the whole day in the teaching buildings.",
+"type": "sentence"
+},
+{
+"category": "Breakfast Tradeoff",
+"chinese": "教学楼离宿舍很远，为了吃早餐我得更早起，这对我来说不值得。",
+"english": "The buildings are far from my dorm, so eating breakfast would mean getting up even earlier, which isn’t worth it to me.",
+"type": "sentence"
+},
+{
+"category": "Schedule",
+"chinese": "课程表已经固定，我必须完成这套课程才能获得学士学位。",
+"english": "The schedule is fixed, and I need to complete the curriculum to earn my bachelor’s degree.",
+"type": "sentence"
+},
+{
+"category": "Sleep",
+"chinese": "以前没有早课的早晨我会自然醒，但现在几乎每天都有早课，这种享受变成了奢侈。",
+"english": "I used to sleep until I woke naturally on class-free mornings, but with morning classes almost every day, that’s become a luxury.",
+"type": "sentence"
+},
+{
+"category": "Evening Study",
+"chinese": "我喜欢在晚上学习，有时也会玩游戏；夜晚安静，更利于思考和享受个人空间。",
+"english": "I like studying in the evening and sometimes playing games; the quiet night helps me think and enjoy personal space.",
+"type": "sentence"
+},
+{
+"category": "Leisure Activities",
+"chinese": "闲暇时我常玩游戏，也会去学校的游泳池游泳。",
+"english": "In my spare time I often play games and go swimming at the university pool.",
+"type": "sentence"
+},
+{
+"category": "Chronotype",
+"chinese": "我是个夜猫子，更喜欢晚睡，因为夜深人静时我最专注、效率最高。",
+"english": "I’m a night owl and prefer going to bed late because I’m most focused and productive at night.",
+"type": "sentence"
+},
+{
+"category": "Vacations",
+"chinese": "假期回家时我通常太累，不太有心情见亲戚，只想好好休息。",
+"english": "When I go home for vacations I’m usually too tired to visit relatives and just want to rest.",
+"type": "sentence"
+},
+{
+"category": "Friends",
+"chinese": "我和朋友上了不同的大学，课程都很重，见面时间很少，但我们会在网上聊天并计划假期见面。",
+"english": "My friends and I attend different universities and have heavy workloads, so we meet rarely, but we chat online and plan to meet during vacations.",
+"type": "sentence"
+},
+{
+"category": "Friends",
+"chinese": "我们都是宅属性，平时多在家玩游戏，偶尔假期会出去旅行拍照留念。",
+"english": "We’re homebodies who usually stay in and play games, but we sometimes travel on holidays to take photos and make memories.",
+"type": "sentence"
+},
+{
+"category": "Social Circle",
+"chinese": "我更喜欢小圈子的朋友关系，真正的友情看重质量而非数量。",
+"english": "I prefer a small circle of friends; true friendship is about quality, not quantity.",
+"type": "sentence"
+},
+{
+"category": "Family Time",
+"chinese": "自从上大学以后，我回家乡的时间变少了，也更难与家人朋友常常相聚。",
+"english": "Since starting university I spend less time in my hometown and it’s harder to see family and friends often.",
+"type": "sentence"
+},
+{
+"category": "Family",
+"chinese": "我和母亲最亲近；父亲因工作常年在外，母亲在我成长中承担了主要照顾。",
+"english": "I’m closest to my mother; my father worked away from home, so she took the lead in raising me.",
+"type": "sentence"
+},
+{
+"category": "Family",
+"chinese": "我家有四口人：父母、我和妹妹，家庭氛围温暖。",
+"english": "There are four people in my family—my parents, my younger sister, and me—and our home feels warm.",
+"type": "sentence"
+},
+{
+"category": "Food Preference",
+"chinese": "我喜欢脆的食物，薯片或生菜的咔嚓声让我格外满足。",
+"english": "I love crispy food; the crunch of potato chips or lettuce is especially satisfying.",
+"type": "sentence"
+},
+{
+"category": "Cooking",
+"chinese": "我从中学起就开始做饭，父母外出时会给妹妹做吃的，现在也常和父母一起下厨。",
+"english": "I’ve been cooking since secondary school, making meals for my sister when my parents were out, and now I often cook with my parents.",
+"type": "sentence"
+},
+{
+"category": "Cooking",
+"chinese": "谁做饭取决于谁有空；爸妈都很会做菜，我和妹妹都很喜欢他们的手艺。",
+"english": "Who cooks depends on who’s available; both my parents are good cooks and my sister and I love their dishes.",
+"type": "sentence"
+},
+{
+"category": "Eating Preference",
+"chinese": "我更喜欢在家吃饭，父母做的菜味道好，而且家常菜更卫生也更有营养。",
+"english": "I prefer eating at home; my parents’ dishes taste great, and home-cooked meals are cleaner and more nutritious.",
+"type": "sentence"
+},
+{
+"category": "Cuisine",
+"chinese": "我最喜欢中国菜，种类多、口味均衡，而且我从小就习惯了。",
+"english": "My favorite cuisine is Chinese; it’s diverse, well balanced, and it’s what I grew up with.",
+"type": "sentence"
+},
+{
+"category": "Cooking Experience",
+"chinese": "在新冠期间我真正学会了做饭，一边上网课一边每天做菜照顾家人。",
+"english": "I truly learned to cook during COVID, juggling online classes while cooking daily for my family.",
+"type": "sentence"
+},
+{
+"category": "Food Dislike",
+"chinese": "我不挑食，但无法接受茄子的味道，多种做法都让我反胃，可能还对它过敏。",
+"english": "I’m not a picky eater, but I can’t stand eggplant; every method I tried made me nauseous, and I may be allergic to it.",
+"type": "sentence"
+},
+{
+"category": "Shopping",
+"chinese": "我更常在网上购物，方便也能买到二手和数字商品。",
+"english": "I usually shop online; it’s convenient and I can buy second-hand and digital goods.",
+"type": "sentence"
+},
+{
+"category": "Shopping",
+"chinese": "我对衣服欲望不强，大多是妈妈帮我买的，偶尔会被短视频广告种草而冲动下单。",
+"english": "I don’t care much about clothes and most were bought by my mom, though short-video ads sometimes trigger impulse purchases.",
+"type": "sentence"
+},
+{
+"category": "Shopping Preference",
+"chinese": "我偏爱网购，选择更多，也比线下更省时间。",
+"english": "I prefer online shopping because the selection is wider and it saves time compared with stores.",
+"type": "sentence"
+},
+{
+"category": "Style",
+"chinese": "我常穿运动装，轻便舒适、活动自如，在校园里也很常见。",
+"english": "I tend to wear sportswear; it’s lightweight, allows free movement, and it’s common on campus.",
+"type": "sentence"
+},
+{
+"category": "Fashion View",
+"chinese": "我不盲目追潮流，因为流行标准总是由他人制定的。",
+"english": "I don’t blindly follow trends because fashion standards are set by others.",
+"type": "sentence"
+},
+{
+"category": "Buying Clothes",
+"chinese": "我多在网上买衣服，选择多、没有销售压力，还能参考真实评价。",
+"english": "I usually buy clothes online for the massive selection, no sales pressure, and access to real reviews.",
+"type": "sentence"
+},
+{
+"category": "Brand Importance",
+"chinese": "品牌对我来说是次要的，我更看重面料的手感和活动是否自如。",
+"english": "Brand names are secondary; I care more about how the fabric feels and whether I can move freely.",
+"type": "sentence"
+},
+{
+"category": "Climate",
+"chinese": "我家乡是典型的温带气候，四季分明，夏季炎热多雨，冬季寒冷干燥。",
+"english": "My hometown has a typical temperate climate with distinct seasons: hot, rainy summers and cold, dry winters.",
+"type": "sentence"
+}
+]
