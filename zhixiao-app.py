@@ -34,17 +34,11 @@ def filter_and_shuffle_cards():
     random.shuffle(st.session_state.filtered_cards)
     st.session_state.card_index = 0
     st.session_state.show_english = False
-
-def show_next_card():
-    """Move to the next flashcard in the deck."""
-    if st.session_state.filtered_cards:
-        st.session_state.card_index = (st.session_state.card_index + 1) % len(st.session_state.filtered_cards)
-        st.session_state.show_english = False
-        st.experimental_rerun()
+    st.rerun()
 
 def main():
     """Main function to run the Streamlit application."""
-    st.title("Speaking Flashcards for Zhixiao")
+    st.title("English-Chinese Flashcards")
 
     # Initialize session state on first run
     initialize_session_state()
@@ -66,7 +60,7 @@ def main():
     if card_type != st.session_state.card_type:
         st.session_state.card_type = card_type
         st.session_state.card_type_changed = True
-        st.experimental_rerun()
+        st.rerun()
 
     # Display the current card
     if st.session_state.filtered_cards:
