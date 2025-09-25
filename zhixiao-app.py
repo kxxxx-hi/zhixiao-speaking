@@ -44,7 +44,7 @@ def show_next_card():
 
 def main():
     """Main function to run the Streamlit application."""
-    st.title("English-Chinese Flashcards for Zhixiao")
+    st.title("Speaking Flashcards for Zhixiao")
 
     # Initialize session state on first run
     initialize_session_state()
