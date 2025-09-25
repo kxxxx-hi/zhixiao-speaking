@@ -4,17 +4,24 @@ import os
 
 app = Flask(__name__)
 
-# A simple route to test if the app is working
 @app.route('/')
 def home():
-    """
-    This is the main route for the application.
-    It returns a JSON response to confirm the app is running.
-    """
-    return jsonify({
-        "message": "Hello from your Flask app on Vercel!",
-        "status": "success"
-    })
+    return """
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Flashcards</title></head>
+<body>
+  <h1>Flashcards</h1>
+  <pre id="out">loading…</pre>
+  <script>
+    fetch('/flashcards').then(r=>r.json()).then(d=>{
+      document.getElementById('out').textContent = JSON.stringify(d,null,2);
+    });
+  </script>
+</body>
+</html>
+"""
+
 
 # New route to serve the flashcard data from data.json
 @app.route('/flashcards')
